@@ -10,6 +10,33 @@
 
 #include "Generators/Generator.h"
 
+class TeeBuffer : public std::streambuf {
+public:
+	TeeBuffer(std::streambuf* sb1, std::streambuf* sb2) : sb1(sb1), sb2(sb2) {}
+
+protected:
+	virtual int overflow(int c) override {
+		if (c == EOF) {
+			return !EOF;
+		} else {
+			int const r1 = sb1->sputc(c);
+			int const r2 = sb2->sputc(c);
+			return (r1 == EOF || r2 == EOF) ? EOF : c;
+		}
+	}
+
+	virtual int sync() override {
+		int const r1 = sb1->pubsync();
+		int const r2 = sb2->pubsync();
+		return (r1 == 0 && r2 == 0) ? 0 : -1;
+	}
+
+private:
+	std::streambuf* sb1;
+	std::streambuf* sb2;
+};
+
+
 enum class EFortToastType : uint8
 {
     Default                                  = 0,
@@ -24,9 +51,22 @@ DWORD MainThread(HMODULE Module)
 	AllocConsole();
 	FILE* Dummy;
 	freopen_s(&Dummy, "CONIN$", "r", stdin);
+	freopen_s(&Dummy, "CONOUT$", "w", stdout);
 	freopen_s(&Dummy, "CONOUT$", "w", stderr);
 	std::cerr.clear(); // clear internal error flags on cerr after redirect
 	std::cerr << std::boolalpha << std::hex;
+
+	// 1. Open your log file
+	std::ofstream fileOut("output.txt");
+
+	// 2. Create the tee buffer, passing it the console buffer and the file buffer
+	TeeBuffer teeBuffer(std::cerr.rdbuf(), fileOut.rdbuf());
+
+	// 3. Save the original cout buffer so we can restore it later
+	std::streambuf* oldCoutBuffer = std::cerr.rdbuf();
+
+	// 4. Redirect std::cout to use our custom tee buffer
+	std::cerr.rdbuf(&teeBuffer);
 
 	std::cerr << "Initializing [Dumper-7]\n";
 

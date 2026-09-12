@@ -22,19 +22,33 @@ inline void InitSettings()
 	Settings::InitArrayDimSizeSettings();
 }
 
+int GetSymbolOffset(const char* Module, const char* Symbol)
+{
+	HMODULE hModuleKit = GetModuleHandleA(Module); // or whatever the module's actually called
+	return hModuleKit != 0 ? (int)((uintptr_t)GetProcAddress(hModuleKit, Symbol) - (uintptr_t)hModuleKit) : 0;
+}
+
 
 void Generator::InitEngineCore()
 {
+	std::cerr << GetSymbolOffset("BrickRigsModKitSteam-CoreUObject.dll", "?GUObjectArray@@3VFUObjectArray@@A") << std::endl;
+	FChunkedFixedUObjectArrayLayout Layout;
+	Layout.ObjectsOffset     = 0x10; // relative to GUObjectArray (i.e. relative to GObjects)
+	Layout.MaxElementsOffset = 0x20;
+	Layout.NumElementsOffset = 0x24;
+	Layout.MaxChunksOffset   = 0x28;
+	Layout.NumChunksOffset   = 0x2C;
+	//Layout.NumElementsPerChunk = 0x10000;
 	/* manual override */
-	//ObjectArray::Init(/*GObjects*/, /*Layout = Default*/); // FFixedUObjectArray (UEVersion < UE4.21)
+	ObjectArray::Init(GetSymbolOffset("BrickRigsModKitSteam-CoreUObject.dll", "?GUObjectArray@@3VFUObjectArray@@A"), 0x10000, Layout, "BrickRigsModKitSteam-CoreUObject.dll"); // FFixedUObjectArray (UEVersion < UE4.21)
 	//ObjectArray::Init(/*GObjects*/, /*ChunkSize*/, /*Layout = Default*/); // FChunkedFixedUObjectArray (UEVersion >= UE4.21)
 
 	//FName::Init(/*bForceGNames = false*/);
-	//FName::Init(/*AppendString, FName::EOffsetOverrideType::AppendString*/);
+	FName::Init(GetSymbolOffset("BrickRigsModKitSteam-Core.dll", "?AppendString@FName@@QEBAXAEAVFString@@@Z"), FName::EOffsetOverrideType::AppendString, false, "BrickRigsModKitSteam-Core.dll");
 	//FName::Init(/*ToString, FName::EOffsetOverrideType::ToString*/);
 	//FName::Init(/*GNames, FName::EOffsetOverrideType::GNames, true/false*/);
  
-	//Off::InSDK::ProcessEvent::InitPE(/*PEIndex*/);
+	Off::InSDK::ProcessEvent::InitPE(92, "BrickRigsModKitSteam-CoreUObject.dll");
 
 	/* Back4Blood (requires manual GNames override) */
 	//InitObjectArrayDecryption([](void* ObjPtr) -> uint8* { return reinterpret_cast<uint8*>(uint64(ObjPtr) ^ 0x8375); });
@@ -42,14 +56,16 @@ void Generator::InitEngineCore()
 	/* Multiversus [Unsupported, weird GObjects-struct] */
 	//InitObjectArrayDecryption([](void* ObjPtr) -> uint8* { return reinterpret_cast<uint8*>(uint64(ObjPtr) ^ 0x1B5DEAFD6B4068C); });
 
-	ObjectArray::Init();
+	//ObjectArray::Init();
 
-	CALL_PLATFORM_SPECIFIC_FUNCTION(FName::Init);
+	//CALL_PLATFORM_SPECIFIC_FUNCTION(FName::Init);
 
 	Off::Init();
 	PropertySizes::Init();
 
-	CALL_PLATFORM_SPECIFIC_FUNCTION(Off::InSDK::ProcessEvent::InitPE); // Must be at this position, relies on offsets initialized in Off::Init()
+	//CALL_PLATFORM_SPECIFIC_FUNCTION(Off::InSDK::ProcessEvent::InitPE); // Must be at this position, relies on offsets initialized in Off::Init()
+
+	Off::InSDK::World::GWorld = GetSymbolOffset("BrickRigsModKitSteam-Engine.dll", "?GWorld@@3VUWorldProxy@@A");
 
 	Off::InSDK::World::InitGWorld(); // Must be at this position, relies on offsets initialized in Off::Init()
 

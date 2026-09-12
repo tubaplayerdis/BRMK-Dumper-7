@@ -147,6 +147,7 @@ void Off::InSDK::World::InitGWorld()
 /* FText */
 void Off::InSDK::Text::InitTextOffsets()
 {
+
 	if (!Off::InSDK::ProcessEvent::PEIndex)
 	{
 		std::cerr << std::format("\nDumper-7: Error, 'InitInSDKTextOffsets' was called before ProcessEvent was initialized!\n") << std::endl;
@@ -157,7 +158,6 @@ void Off::InSDK::Text::InitTextOffsets()
 	{
 		return !Platform::IsBadReadPtr(a) /* && (uintptr_t(a) & 0x1) == 0*/; // realistically, there wont be any pointers to unaligned memory
 	};
-
 
 	const UEFunction Conv_StringToText = ObjectArray::FindObjectFast<UEFunction>("Conv_StringToText", EClassCastFlags::Function);
 
@@ -204,6 +204,8 @@ void Off::InSDK::Text::InitTextOffsets()
 
 	/* Initialize 'InString' in the ParamStruct */
 	*reinterpret_cast<FString*>(ParamPtr + StringOffset) = StringText;
+
+	std::cerr << "INIT TEXT OFFSETS" << std::endl;
 
 	/* This function is 'static' so the object on which we call it doesn't matter */
 	ObjectArray::GetByIndex(0).ProcessEvent(Conv_StringToText, ParamPtr);

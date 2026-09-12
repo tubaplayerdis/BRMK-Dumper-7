@@ -164,6 +164,8 @@ bool IsAddressValidGObjects(const uintptr_t Address, const FChunkedFixedUObjectA
 
 void ObjectArray::InitializeFUObjectItem(uint8_t* FirstItemPtr)
 {
+	std::cerr << "Init FUObjectItem" << std::endl;
+
 	for (int i = 0x0; i < 0x20; i += 4)
 	{
 		if (!Platform::IsBadReadPtr(*reinterpret_cast<uint8_t**>(FirstItemPtr + i)))
@@ -172,6 +174,8 @@ void ObjectArray::InitializeFUObjectItem(uint8_t* FirstItemPtr)
 			break;
 		}
 	}
+
+	std::cerr << "Init FUObjectItem 2" << std::endl;
 
 	for (int i = FUObjectItemInitialOffset + sizeof(void*); i <= 0x38; i += 4)
 	{
@@ -363,7 +367,7 @@ void ObjectArray::Init(int32 GObjectsOffset, const FFixedUObjectArrayLayout& Obj
 
 	std::cerr << "Overwrote FFixedUObjectArray GObjects to offset 0x" << std::hex << Off::InSDK::ObjArray::GObjects << "\n" << std::endl;
 
-	ObjectArray::InitializeFUObjectItem(*reinterpret_cast<uint8_t**>(ChunksPtr));
+	ObjectArray::InitializeFUObjectItem(ChunksPtr/**reinterpret_cast<uint8_t**>(ChunksPtr)*/);
 }
 
 void ObjectArray::Init(int32 GObjectsOffset, int32 ElementsPerChunk, const FChunkedFixedUObjectArrayLayout& ObjectArrayLayout, const char* const ModuleName)
